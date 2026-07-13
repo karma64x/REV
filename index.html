@@ -17,7 +17,7 @@
             min-height: 100vh;
             display: flex;
             justify-content: center;
-            align-items: flex-start;
+            align-items: center;
             padding: 10px;
             color: #fff;
             position: relative;
@@ -52,13 +52,14 @@
             background: rgba(255, 255, 255, 0.08);
             backdrop-filter: blur(18px);
             border-radius: 32px;
-            padding: 25px 20px;
+            padding: 20px;
             box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5), inset 0 0 30px rgba(255, 255, 255, 0.05);
             margin-top: 20px;
             text-align: center;
             border: 1px solid rgba(255, 255, 255, 0.15);
             position: relative;
             z-index: 1;
+            transition: all 0.3s ease;
         }
 
         .header-icon {
@@ -79,10 +80,35 @@
 
         .subtitle {
             font-size: 0.95rem;
-            margin-bottom: 18px;
+            margin-bottom: 10px;
             opacity: 0.9;
             letter-spacing: 0.5px;
             color: #d4e6f1;
+        }
+
+        /* Aviso para girar el móvil */
+        .rotate-warning {
+            display: none; /* Oculto por defecto */
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            color: #ffb300;
+            padding: 25px 20px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            font-weight: bold;
+            font-size: 1.3rem;
+            border: 2px dashed #ffb300;
+            animation: pulseWarning 1.5s infinite;
+        }
+        .rotate-warning .icon {
+            font-size: 3rem;
+            display: block;
+            margin-bottom: 10px;
+        }
+        @keyframes pulseWarning {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+            100% { transform: scale(1); }
         }
 
         .tabs {
@@ -137,6 +163,7 @@
             box-shadow: inset 0 0 15px rgba(0,0,0,0.2), 0 12px 24px rgba(0,0,0,0.3);
             margin-bottom: 18px;
             border: 2px solid #ffb30033;
+            max-width: 100%;
         }
 
         .cell {
@@ -326,6 +353,21 @@
                 transform: rotate(720deg);
             }
         }
+
+        /* Ajustes responsive para landscape en móviles */
+        @media (max-width: 768px) and (orientation: landscape) {
+            .main-container {
+                padding: 15px;
+                margin-top: 5px;
+            }
+            .cell {
+                font-size: 0.8rem;
+            }
+            .bingo-board {
+                gap: 5px;
+                padding: 8px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -333,9 +375,15 @@
     <div class="bg-particles" id="bgParticles"></div>
 
     <div class="main-container">
-        <div class="header-icon">🍽️⚕️</div>
-        <h1>BINGO 3D/4D</h1>
+        
+        <h1>BINGO DE ALIMENTOS!</h1>
         <div class="subtitle">Impresión de alimentos para hospitales</div>
+
+        <!-- Aviso para girar el móvil (aparece en vertical en pantallas pequeñas) -->
+        <div class="rotate-warning" id="rotateWarning">
+            <span class="icon">📱↩️</span>
+            ¡Gira tu teléfono para jugar mejor!
+        </div>
 
         <div class="tabs">
             <button class="tab active" data-tab="player">🎲 Jugador</button>
@@ -356,7 +404,7 @@
 
         <!-- Panel del verificador (compañero) -->
         <div class="panel" id="checkerPanel">
-            <div class="checker-counter">🗣️ Palabras dichas: <span id="checkerCount">0</span> / 70</div>
+            <div class="checker-counter">🗣️ Palabras dichas: <span id="checkerCount">0</span> / <span id="totalCheckerWords"></span></div>
             <div class="checker-list" id="checkerList"></div>
             <div style="margin-top: 18px;">
                 <button id="resetCheckerBtn" class="reset-btn">🗑️ Reiniciar lista</button>
@@ -369,20 +417,31 @@
 
     <script>
         (function() {
-            // Lista cronológica
+            // ----------------------------------------------
+            // NUEVA LISTA DE PALABRAS (Ampliada con tus términos)
+            // ----------------------------------------------
             const palabrasCronologicas = [
-                "potencias", "impresión", "3D", "4D", "alimentos", "Japón", "nutrición", "sushi",
-                "cartuchos", "ingredientes", "vegetales", "algas", "enzimas", "fibras", "nutrientes",
-                "sabores", "diseño", "salud", "adultos", "alimentación", "texturas", "mercado",
-                "precisión", "crecimiento", "Estados Unidos", "carne", "liderazgo", "cocción",
-                "láser", "pollo", "salmón", "humedad", "hornos", "hardware", "impresora",
-                "extrusión", "Alemania", "plantas", "forma", "color", "estímulos", "ingeniería",
-                "seguridad", "automatización", "limpieza", "Países Bajos", "azúcar", "geometrías",
-                "encapsulación", "cocinas", "proteínas", "México", "aplicaciones", "hospitalidad",
-                "gubernamental", "restaurantero", "Brasil", "software", "simulación", "segmentación",
-                "hospitales", "tomografía", "modelos", "planificación", "quirúrgica", "capacitación",
-                "entrenamiento", "residentes", "cirugías", "insumos"
+                // Bloque de Disfagia y condiciones médicas
+                "Disfagia", "Deglución", "Músculos", "Aspiración", "Diagnóstico", "Deshidratación",
+                "Desnutrición", "Neumonía", "Mortalidad", "Funcional", "Morbimortalidad", "Morbilidad",
+                "Viscosidad", "Faringe", "Epiglotis", "Tráquea", "Broncoaspiración", "Inmunodepresion",
+                "Prevalencia", "Geriatrica", "Neurológicos", "Cerebrovascular", "Parkinson", "Textura", "Biomecánico",
+                // Bloque de Innovación y Tecnología
+                "Japón", "Geriatría", "Disfagia", "Sushi", "Cartuchos", "Impresión3D", "Precisión", "Calidad",
+                "Estados Unidos", "Proteína", "Sostenibilidad", "Bioprinting", "Láser", "Multimaterial",
+                "Extrusión", "Alemania", "Funcionalidad", "Impresión4D", "Hohenheim", "Automatización",
+                "Normativas", "Países Bajos", "Polvos", "Bioactivos", "FoodJetting", "Encapsulación",
+                "México", "Personalizada", "Brasil", "InVesalius",
+                
+                "Innovación", "Bolivia", "Investigación", "Desarrollo (I+D)", "Inversión", "Tecnología",
+                "Infraestructura", "Patentes", "Propiedad intelectual", "Hospitales inteligentes",
+                "Dependencia tecnológica", "Academia", "UMSA", "Interdisciplinariedad",
+                "Transferencia tecnológica", "Nutrición", "Manufactura aditiva", "Soberanía tecnológica",
+                "Ecosistema de innovación", "Conocimiento"
             ];
+
+            // Para el verificador mostramos el total real (con repeticiones, tal cual)
+            const totalPalabrasVerificador = palabrasCronologicas.length;
 
             const FILAS = 3;
             const COLUMNAS = 9;
@@ -393,7 +452,7 @@
             let marked = [];
             let boardId = "";
             // Estado verificador
-            let palabrasDichas = new Array(palabrasCronologicas.length).fill(false);
+            let palabrasDichas = new Array(totalPalabrasVerificador).fill(false);
 
             // DOM
             const tabs = document.querySelectorAll('.tab');
@@ -406,7 +465,26 @@
             const confettiContainer = document.getElementById('confettiContainer');
             const checkerListEl = document.getElementById('checkerList');
             const checkerCountEl = document.getElementById('checkerCount');
+            const totalCheckerWordsEl = document.getElementById('totalCheckerWords');
             const resetCheckerBtn = document.getElementById('resetCheckerBtn');
+            const rotateWarning = document.getElementById('rotateWarning');
+
+            // Mostrar total en el verificador
+            if (totalCheckerWordsEl) totalCheckerWordsEl.textContent = totalPalabrasVerificador;
+
+            // Lógica para mostrar/ocultar el aviso de rotación
+            function checkOrientation() {
+                if (window.innerWidth <= 768 && window.innerHeight > window.innerWidth) {
+                    // Estamos en portrait (vertical) en pantalla pequeña
+                    if (rotateWarning) rotateWarning.style.display = 'block';
+                } else {
+                    // Landscape o pantalla grande
+                    if (rotateWarning) rotateWarning.style.display = 'none';
+                }
+            }
+            window.addEventListener('orientationchange', checkOrientation);
+            window.addEventListener('resize', checkOrientation);
+            checkOrientation(); // Checar al cargar
 
             // Cambio de pestañas
             tabs.forEach(tab => {
@@ -417,13 +495,25 @@
                     panels.forEach(p => p.classList.remove('active'));
                     document.getElementById(target === 'player' ? 'playerPanel' : 'checkerPanel').classList.add('active');
                     if (target === 'checker') renderChecker();
+                    // Revisar orientación al cambiar de pestaña (por si el aviso debe mostrarse)
+                    checkOrientation();
                 });
             });
 
-            // Generar cartón aleatorio
+            // Generar cartón aleatorio (usa palabras sin repetir dentro del mismo cartón, pero de la bolsa total)
             function generarCarton() {
                 const carton = new Array(FILAS * COLUMNAS).fill("");
-                const palabrasDisponibles = [...palabrasCronologicas];
+                // Para el cartón, evitamos duplicados: usamos una copia de la lista y la barajamos
+                const palabrasUnicas = [...new Set(palabrasCronologicas)]; // Set elimina duplicados para el cartón
+                const palabrasDisponibles = [...palabrasUnicas];
+                if (palabrasDisponibles.length < FILAS * PALABRAS_POR_FILA) {
+                    console.warn("No hay suficientes palabras únicas, se reutilizarán algunas.");
+                    // Rellenar con originales si faltan (poco probable con esta lista)
+                    while (palabrasDisponibles.length < FILAS * PALABRAS_POR_FILA) {
+                        palabrasDisponibles.push(palabrasCronologicas[Math.floor(Math.random() * palabrasCronologicas.length)]);
+                    }
+                }
+                // Barajar (Fisher-Yates)
                 for (let i = palabrasDisponibles.length - 1; i > 0; i--) {
                     const j = Math.floor(Math.random() * (i + 1));
                     [palabrasDisponibles[i], palabrasDisponibles[j]] = [palabrasDisponibles[j], palabrasDisponibles[i]];
@@ -555,7 +645,7 @@
                 if (data) {
                     try {
                         const arr = JSON.parse(data);
-                        if (Array.isArray(arr) && arr.length === palabrasCronologicas.length) {
+                        if (Array.isArray(arr) && arr.length === totalPalabrasVerificador) {
                             palabrasDichas = arr;
                             return true;
                         }
@@ -586,11 +676,12 @@
             }
 
             function actualizarContadorChecker() {
-                checkerCountEl.textContent = palabrasDichas.filter(v => v).length;
+                const count = palabrasDichas.filter(v => v).length;
+                checkerCountEl.textContent = count;
             }
 
             function resetChecker() {
-                palabrasDichas = new Array(palabrasCronologicas.length).fill(false);
+                palabrasDichas = new Array(totalPalabrasVerificador).fill(false);
                 renderChecker();
                 guardarEstadoVerificador();
             }
@@ -609,7 +700,7 @@
 
             function initVerificador() {
                 if (!cargarEstadoVerificador()) {
-                    palabrasDichas = new Array(palabrasCronologicas.length).fill(false);
+                    palabrasDichas = new Array(totalPalabrasVerificador).fill(false);
                     guardarEstadoVerificador();
                 }
             }
