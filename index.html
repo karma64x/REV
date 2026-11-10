@@ -126,15 +126,17 @@ input[type=range]{flex:1;accent-color:var(--acc)}
 
 <div id="sm" hidden><div class="card">
  <h2>Comparte tu revista</h2>
- <p>Elige cómo quieres publicarla. Ambas formas funcionan en GitHub Pages.</p>
- <h3>Enlace a tu PDF</h3>
- <p>Sube el PDF al mismo repositorio (o a cualquier sitio público con CORS, como GitHub) y pega su dirección. El enlace guarda tus ajustes y cualquiera podrá leerla sin editar.</p>
- <input id="pu" placeholder="revista.pdf  o  https://usuario.github.io/repo/revista.pdf">
- <div class="row"><button class="b p" id="gl">Crear enlace</button></div>
+ <p>Pulsa el botón y te daremos un enlace. Cualquier persona que lo abra verá tu revista terminada, lista para hojear.</p>
+ <div class="row"><button class="b p" id="gl">Publicar y obtener enlace</button></div>
  <div class="row" id="lo" hidden><input id="lk" readonly><button class="b" id="cp">Copiar</button></div>
- <h3>Archivo HTML independiente</h3>
- <p>Descarga la revista terminada en un solo archivo, con todas las páginas dentro. Súbelo donde quieras y compártelo.</p>
- <div class="row"><button class="b" id="dl">Descargar revista.html</button><button class="b" id="cl" style="margin-left:auto">Cerrar</button></div>
+ <p id="nocfg" hidden style="margin-top:10px">El almacenamiento todavía no está conectado en esta página, así que no se puede crear enlace. Puedes usar la opción de descargar el archivo.</p>
+ <h3>Otra forma: descargar un archivo</h3>
+ <p>Te baja tu revista terminada en un solo archivo HTML, que puedes subir a cualquier sitio web.</p>
+ <div class="row"><button class="b" id="dl">Descargar revista.html</button></div>
+ <details style="margin-top:14px"><summary style="cursor:pointer;color:var(--mut)">Ya tengo mi PDF en internet</summary>
+  <p style="margin-top:8px">Pega la dirección pública de tu PDF y crearemos el enlace sin subir nada.</p>
+  <input id="pu" placeholder="https://…/revista.pdf"><div class="row"><button class="b" id="gp">Crear enlace</button></div></details>
+ <div class="row"><button class="b" id="cl" style="margin-left:auto">Cerrar</button></div>
 </div></div>
 
 <div id="ld" hidden><div class="spin"></div><p id="lm"></p><div class="pb"><i id="lp"></i></div></div>
@@ -155,6 +157,9 @@ const P=[
 ['Lectura',[['auto','rng','Pasar páginas solas (0 = apagado)',[0,15,1,' s']],['thumbs','chk','Mostrar miniaturas']]],
 ['Calidad',[['q','sel','Resolución de las páginas',{1:'Ligera (más rápida)',1.5:'Media',2:'Alta (más pesada)'}]]]
 ];
+/* ===== CONEXIÓN DE ALMACENAMIENTO (se rellena una sola vez, ver la guía) ===== */
+const CFG={url:'wxcqvrpttcjignpsbazt',key:'sb_publishable_EGQYoBFLR58sN_JmClObUA_BdJTqXit',bucket:'revistas'};
+let pdfFile=null;
 let S={...D},pages=[],ratio=.75,pdfDoc=null,act=null,bE=null,bR=null,AC;
 const esc=s=>String(s).replace(/[&<>"]/g,c=>'&#'+c.charCodeAt(0)+';');
 const enc=o=>btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g,'-').replace(/\//g,'_');
@@ -225,7 +230,7 @@ async function renderAll(){const n=pdfDoc.numPages,out=[];
  for(let i=1;i<=n;i++){load(true,`Procesando página ${i} de ${n}`,(i-1)/n);const p=await pdfDoc.getPage(i),v1=p.getViewport({scale:1}),v=p.getViewport({scale:900*S.q/v1.width}),c=document.createElement('canvas');
   c.width=v.width;c.height=v.height;await p.render({canvasContext:c.getContext('2d'),viewport:v}).promise;if(i==1)ratio=v.width/v.height;out.push(c.toDataURL('image/jpeg',.86))}
  pages=out;load(false)}
-function demo(){pdfDoc=null;ratio=.75;pages=[];S.title='Revista de ejemplo';
+function demo(){pdfDoc=null;pdfFile=null;ratio=.75;pages=[];S.title='Revista de ejemplo';
  const T=['Portada','Editorial','Viajes','Ciencia','Cocina','Arte','Fotografía','Contraportada'];
  T.forEach((t,i)=>{const c=document.createElement('canvas');c.width=900;c.height=1200;const x=c.getContext('2d'),h=(i*47+250)%360,g=x.createLinearGradient(0,0,900,1200);
   g.addColorStop(0,`hsl(${h},75%,${i&&i<7?93:40}%)`);g.addColorStop(1,`hsl(${h+40},65%,${i&&i<7?78:16}%)`);x.fillStyle=g;x.fillRect(0,0,900,1200);
@@ -267,7 +272,7 @@ function exportHtml(){const j=JSON.stringify({s:S,pages,ratio}).replace(/</g,'\\
 /* eventos */
 const f=$('#file'),dp=$('#drop');
 async function onFile(file){if(!file||!/pdf$/i.test(file.type||file.name))return toast('Selecciona un archivo PDF.');
- try{load(true,'Leyendo PDF…');S.title=file.name.replace(/\.pdf$/i,'');await openPdf(new Uint8Array(await file.arrayBuffer()));openEditor()}catch(e){load(false);toast('No se pudo leer el PDF: '+e.message)}}
+ try{load(true,'Leyendo PDF…');S.title=file.name.replace(/\.pdf$/i,'');pdfFile=file;await openPdf(new Uint8Array(await file.arrayBuffer()));openEditor()}catch(e){load(false);toast('No se pudo leer el PDF: '+e.message)}}
 f.onchange=()=>onFile(f.files[0]);
 dp.ondragover=e=>{e.preventDefault();dp.classList.add('ov')};dp.ondragleave=()=>dp.classList.remove('ov');
 dp.ondrop=e=>{e.preventDefault();dp.classList.remove('ov');onFile(e.dataTransfer.files[0])};
@@ -276,9 +281,18 @@ $('#ep').onclick=()=>bE.prev();$('#en').onclick=()=>bE.next();$('#rp').onclick=(
 $('#bk').onclick=()=>{bR.destroy();bR=null;openEditor()};
 $('#fs').onclick=()=>document.fullscreenElement?document.exitFullscreen():$('#rd').requestFullscreen&&$('#rd').requestFullscreen();
 $('#shb').onclick=()=>{$('#sm').hidden=false};$('#cl').onclick=()=>{$('#sm').hidden=true};
-$('#gl').onclick=()=>{const u=$('#pu').value.trim();if(!u)return toast('Escribe la dirección de tu PDF.');
- if(location.protocol==='file:')toast('Genera el enlace desde la versión publicada en GitHub Pages.');
- $('#lk').value=location.href.split('#')[0]+'#v='+enc({s:S,p:u});$('#lo').hidden=false};
+const hubLink=pub=>{$('#lk').value=location.href.split('#')[0]+'#v='+enc({s:S,p:pub});$('#lo').hidden=false};
+$('#gl').onclick=async()=>{
+ if(!CFG.url||!CFG.key){$('#nocfg').hidden=false;return}
+ if(!pdfFile)return toast('Para publicar, primero carga un PDF (el ejemplo no se puede publicar).');
+ const path=Date.now().toString(36)+Math.random().toString(36).slice(2,9)+'.pdf',h={apikey:CFG.key,'Content-Type':'application/pdf'};
+ if(CFG.key.startsWith('eyJ'))h.Authorization='Bearer '+CFG.key;
+ load(true,'Subiendo tu revista…',.6);
+ try{const r=await fetch(`${CFG.url}/storage/v1/object/${CFG.bucket}/${path}`,{method:'POST',headers:h,body:pdfFile});
+  if(!r.ok)throw new Error(r.status===413?'el PDF es demasiado pesado':'el servidor respondió '+r.status);
+  hubLink(`${CFG.url}/storage/v1/object/public/${CFG.bucket}/${path}`);toast('Enlace creado')}
+ catch(e){toast('No se pudo publicar: '+e.message)}load(false)};
+$('#gp').onclick=()=>{const u=$('#pu').value.trim();if(!u)return toast('Escribe la dirección de tu PDF.');hubLink(u)};
 $('#cp').onclick=()=>{$('#lk').select();(navigator.clipboard?navigator.clipboard.writeText($('#lk').value):Promise.reject()).then(()=>toast('Enlace copiado'),()=>{document.execCommand('copy');toast('Enlace copiado')})};
 $('#dl').onclick=exportHtml;
 onkeydown=e=>{if(!act||$('#sm').hidden===false||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;
